@@ -15,7 +15,7 @@ import src.utils.logging as logging
 logger = logging.get_logger(__name__)
 
 
-def train(model, optimizer, criterion, train_loader, val_loader, logdir,
+def train(model, optimizer, criterion, loaders, logdir,
           train_mode, train_params, device, pretrained_model_path, infer_fn):
     """Training routine
 
@@ -23,8 +23,10 @@ def train(model, optimizer, criterion, train_loader, val_loader, logdir,
         model: model to train
         optimizer: optimizer to optimize the loss function
         criterion: loss function
-        train_loader: data loader for training set
-        val_loader: data loader for evaluation set
+        loaders: dictionary of data loader for training and validation
+            'loaders[train]' for training
+            'loaders[val]' for validationn
+            ...
         logdir: where to store the logs
         train_mode: how to start the training. Only accept values as:
             'from_scratch': start the training from scratch
@@ -49,7 +51,8 @@ def train(model, optimizer, criterion, train_loader, val_loader, logdir,
         raise ValueError('Unsupported train_mode: {}'.format(train_mode))
 
     # Set up some variables
-    score_best = 1000000.0
+    infer_fn.init_best_model_score()
+
     # writer = SummaryWriter(log_dir=logdir, purge_step=start_epoch)
     writer = SummaryWriter(log_dir=logdir)
 
@@ -58,12 +61,13 @@ def train(model, optimizer, criterion, train_loader, val_loader, logdir,
         logger.info('epoch: %d/%d' % (epoch+1, train_params['n_epochs']))
 
         # Training phase
+        train_loader = loaders['train']
         run_iter = epoch * len(train_loader)
         train_loss = train_one_epoch(model, optimizer, criterion, train_loader,
                                      device, writer, run_iter)
 
         # Validation phase
-        val_loss, val_score = test(model, criterion, val_loader, device, infer_fn)
+        val_loss, val_score = test(model, criterion, loaders, device, infer_fn)
 
         # Log using Tensorboard
         writer.add_scalars('losses', {'train': train_loss, 'val': val_loss}, epoch)
@@ -74,9 +78,7 @@ def train(model, optimizer, criterion, train_loader, val_loader, logdir,
             MiscUtils.save_progress(model, optimizer, logdir, epoch)
 
         # Backup the best model
-        if val_loss < score_best: # best model is chosen base on validation loss!!!
-            score_best = val_loss
-            logger.info('Current best score: %.2f' % score_best)
+        if infer_fn.is_better_model(val_loss, val_score):
             model.save_model(os.path.join(logdir, 'best.model'))
 
         # Decay learning Rate
@@ -115,6 +117,7 @@ def train_one_epoch(model, optimizer, criterion, train_loader, device, writer, r
 
     # Go through all samples of the training data
     train_loss, n_samples, start_time = 0.0, 0, time.time()
+
     for i, (samples, labels) in enumerate(train_loader):
         # Place data on the corresponding device
         samples = samples.to(device)
@@ -135,6 +138,8 @@ def train_one_epoch(model, optimizer, criterion, train_loader, device, writer, r
         run_iter += 1
         if run_iter % 100 == 0:
             writer.add_scalar('train_loss_per_iter', loss.item(), run_iter)
+
+        break
         
     pbar.finish()
 

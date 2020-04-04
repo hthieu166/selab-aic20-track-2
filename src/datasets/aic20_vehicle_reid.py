@@ -11,10 +11,14 @@ sys.path.insert(0, os.path.abspath(
     os.path.join(os.path.dirname(__file__), '..', '..', 'src')))
 
 from src.datasets.img_base_dataset import ImageBaseDataset
-
+import ipdb
 class AIC20_VEHI_REID(ImageBaseDataset):
     """AICity20 Vehicle Re-ID dataset"""
-    
+    def get_support_modes(self):
+        """This funnnction return support modes for the current dataset
+        """
+        return ['train', 'gallery', 'query']
+
     def get_all_labels(self, lbl_fname):
         """This function constructs a dictionary of image's label. 
         Each element should looks like: 
@@ -26,9 +30,13 @@ class AIC20_VEHI_REID(ImageBaseDataset):
         #Convert instance to instance index: e.g. 1->453 (333 insts) => 0 -> 332
         self.ist2idx = {} 
         c = 0
+        img2id = {}
         for child in root.iter("Item"):
             imgId = child.attrib["imageName"]
             vehId = int(child.attrib["vehicleID"])
+            img2id[imgId.split('.')[0]] = vehId
+        for imgId in self.imglst:   
+            vehId = img2id[imgId]
             if vehId not in self.ist2idx:
                 self.ist2idx[vehId] = c
                 c+=1
@@ -39,7 +47,7 @@ class AIC20_VEHI_REID(ImageBaseDataset):
         # Test mode does not have label
         if (self.mode == 'test'):
             return -1
-        img_id = self.img_fname_lst[idx]
+        img_id = self.imglst[idx]
         return self.label_dict[img_id]
 
     def get_nclasses(self):

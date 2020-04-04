@@ -1,7 +1,5 @@
 """Make metrics for BEAT-PD"""
 import numpy as np
-import ipdb
-
 class BeatPDMetrics():
     def __init__(self):
         self.result_dict = {}

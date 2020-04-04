@@ -14,17 +14,17 @@ from torch import optim
 from torch.utils.data import DataLoader
 
 from src.utils.load_cfg import ConfigLoader
-from src.factories import ModelFactory, DatasetFactory, DataAugmentationFactory, LossFactory, DataSamplerFactory 
+from src.factories import ModelFactory, LossFactory, InferFactory
+from src.loaders.base_loader_factory import BaseDataLoaderFactory
 from trainer import train
 from tester import test
 import src.utils.logging as logging
 
-from torchvision import transforms
 logger = logging.get_logger(__name__)
 
 import ipdb
-from src.inferences.img_cls_infer import ImgClsInfer
 
+from src.inferences.base_infer import BaseInfer
 def parse_args():
     """Parse input arguments"""
     def str2bool(v):
@@ -102,9 +102,6 @@ def main():
     dataset_name, dataset_params = ConfigLoader.load_dataset_cfg(args.dataset_cfg)
     train_params = ConfigLoader.load_train_cfg(args.train_cfg)
     
-    # Copy over some parameters
-
-
     # Set up device (cpu or gpu)
     if args.gpu_id < 0:
         device = torch.device('cpu')
@@ -112,67 +109,39 @@ def main():
         device = torch.device('cuda', args.gpu_id)
     logger.info('Using device: %s' % device)
     
-    # Prepare datalst_pth
-    if (args.datalst_pth is not None):
-        for lst in dataset_params['datalst_pth'].keys():
-            dataset_params['datalst_pth'][lst] = \
-            os.path.join(args.datalst_pth, dataset_params['datalst_pth'][lst])
-
-    # Set up common parameters for data loaders (shared among train/val/test)
-    dataset_factory = DatasetFactory()
-    loader_params = {
-        'batch_size': train_params['batch_size'],
-        'num_workers': args.num_workers,
-    }
+    # Prepare datalst_pths
+    # if (args.datalst_pth is not None):
+    #     for lst in dataset_params['datalst_pth'].keys():
+    #         dataset_params['datalst_pth'][lst] = \
+    #         os.path.join(args.datalst_pth, dataset_params['datalst_pth'][lst])
 
     # Build model
     model_factory = ModelFactory()
     model = model_factory.generate(model_name, device=device, **model_params)
     model = model.to(device)
     
-    # Data augmentation
-    if args.is_data_augmented:
-        data_augmentation_factory = DataAugmentationFactory()
-        composed_transforms = transforms.Compose([
-            data_augmentation_factory.generate(
-                i, train_params['data_augment'][i])
-            for i in train_params['data_augment'].keys()])
-        dataset_params['transform'] = composed_transforms
-    else:
-        dataset_params['transform'] = None
-    
+
     # Set up loss criterion
     loss_fn_factory = LossFactory()
     criterion = loss_fn_factory.generate(train_params['loss_fn'])
 
     # Set up infer funtions
-    infer_fn = ImgClsInfer()
+    if 'task' not in train_params:
+        infer_fn = BaseInfer()
+    else:
+        inferFact = InferFactory()
+        infer_fn  = inferFact.generate(train_params['task']) 
+
+    # Set up common parameters for data loaders (shared among train/val/test)
+    common_loader_params = {
+        'batch_size': train_params['batch_size'],
+        'num_workers': args.num_workers,
+    }
+    # Setup loaders
+    loader_fact = BaseDataLoaderFactory(dataset_name, dataset_params, train_params, common_loader_params)
     # Main pipeline
     if args.is_training:
-        # Create data loader for training
-        train_dataset = dataset_factory.generate(
-            dataset_name, mode='train', **dataset_params) 
-        # Create data sampler obj if neccessary
-        if ('batch_sampler' in train_params):
-            smplrFact = DataSamplerFactory()
-            sampler_params = list(train_params['batch_sampler'].values())[0]
-            sampler_params['dataset'] = train_dataset
-            train_sampler = smplrFact.generate(
-                list(train_params['batch_sampler'].keys())[0],
-                **sampler_params
-            )
-            train_loader = DataLoader(train_dataset, 
-            batch_sampler=train_sampler, num_workers= args.num_workers)
-        else:
-            train_loader = DataLoader(
-            train_dataset, shuffle=True, drop_last=True, **loader_params)
-
-        # Create data loader for validation
-        val_dataset = dataset_factory.generate(
-            dataset_name, mode='val', **dataset_params)
-        val_loader = DataLoader(
-            val_dataset, shuffle=False, drop_last=False, **loader_params)
-
+        train_val_loaders = loader_fact.train_val_loaders()
         # Create optimizer
         optimizer = optim.SGD(
             model.parameters(),
@@ -182,19 +151,14 @@ def main():
             nesterov=True)
 
         # Train/val routine
-        train(model, optimizer, criterion, train_loader, val_loader, args.logdir,
+        train(model, optimizer, criterion, train_val_loaders, args.logdir,
               args.train_mode, train_params, device, args.pretrained_model_path, infer_fn)
     else:
         # Create data loader for testing
-        test_dataset = dataset_factory.generate(
-            dataset_name, mode='test', **dataset_params)
-        test_loader = DataLoader(
-            test_dataset, shuffle=False, drop_last=False, **loader_params)
-
+        test_loaders = loader_fact.test_loaders()
         # Test routine
         model.load_model(args.pretrained_model_path)
-        test(model, criterion, test_loader, device, infer_fn)
-        
+        test(model, criterion, test_loader, device, infer_fn)   
     return 0
 
 

@@ -1,13 +1,21 @@
 """This code is adapted from 
-https://github.com/CoinCheung/triplet-reid-pytorch/blob/master/triplet_selector.py
-https://github.com/CoinCheung/triplet-reid-pytorch/blob/master/loss.py
-""""
+    https://github.com/CoinCheung/triplet-reid-pytorch/blob/master/triplet_selector.py
+    https://github.com/CoinCheung/triplet-reid-pytorch/blob/master/loss.py
+"""
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
+
+import sys
+import os
+sys.path.insert(0, os.path.abspath(
+    os.path.join(os.path.dirname(__file__), '..', '..', 'src')))
 
 import torch
 import numpy as np
-from utils import pdist_torch as pdist
 import torch.nn as nn
-
+from src.utils.reid_metrics import pdist_torch
+import ipdb
 class BatchHardTripletSelector(object):
     '''
     a selector to generate hard batch embeddings from the embedded batch
@@ -16,7 +24,8 @@ class BatchHardTripletSelector(object):
         super(BatchHardTripletSelector, self).__init__()
 
     def __call__(self, embeds, labels):
-        dist_mtx = pdist(embeds, embeds).detach().cpu().numpy()
+        dist_mtx = pdist_torch(embeds, embeds)
+        dist_mtx = dist_mtx.detach().cpu().numpy()
         labels = labels.contiguous().cpu().numpy().reshape((-1, 1))
         num = labels.shape[0]
         dia_inds = np.diag_indices(num)
@@ -57,5 +66,4 @@ class TripletLoss(nn.Module):
             loss = self.Loss(an_dist - ap_dist, y)
         else:
             loss = self.Loss(anchor, pos, neg)
-
         return loss

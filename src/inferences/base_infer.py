@@ -13,6 +13,9 @@ sys.path.insert(0, os.path.abspath(
 
 import numpy as np
 import pandas as pd
+from src.utils.misc import MiscUtils
+import torch
+import ipdb
 
 class BaseInfer():
     """Defines further steps afer getting outputs from model, e.g. 
@@ -22,19 +25,84 @@ class BaseInfer():
     def __init__(self):
         pass
 
-    def init_metric(self):
-        pass
+    def init_metric(self, **kwargs):
+        self.model      = kwargs['model']
+        self.device     = kwargs['device']
+        self.criterion  = kwargs['criterion']
+        self.loaders    = kwargs['loaders']
+        # Switch to eval mode
+        self.model.eval()
+        # Init some variables
+        self.eval_loader = self.loaders['test'] if 'test' in self.loaders else None
+        self.eval_mess   = 'Evaluate: '
+        self.test_loss   = 0.0
 
-    def batch_update(self, outputs, labels):
+    def batch_evaluation(self, outputs, labels):
         pass
         """
             This function is called every batch
         """
-        
+    
+    def __call__(self, **kwargs):
+        self.init_metric(**kwargs)
+        self.evaluation_loop()
+        return self.evaluation_result()
 
-    def finalize_metric(self, logger, test_loss):
+    def evaluation_loop(self):
+        """
+            This function loop through every testing epoches
+        """ 
+
+        assert self.eval_loader is not None, "Evaluation loader is not specified"
+        # Setup progressbar
+        pbar = MiscUtils.gen_pbar(max_value=len(self.eval_loader), msg=self.eval_mess)
+        with torch.no_grad():
+            for i, (samples, labels) in enumerate(self.eval_loader):
+                # Evaluating for the current batch
+                self.batch_evaluation(samples, labels)
+                # Monitor progress
+                pbar.update(i+1)
+                break
+        pbar.finish()
+    
+    def batch_evaluation(self, samples, labels):
+        """
+            This function is called every batch evaluation
+        """ 
+         # Place data on the corresponding device
+        samples = samples.to(self.device)
+        labels = labels.to(self.device)
+
+        # Forwarding
+        outputs = self.model(samples)
+        loss = self.criterion(outputs, labels)
+        self.test_loss += loss
+        return outputs
+
+    def evaluation_result(self):
         """
         This function is called at the end of evaluation process
         Final statistic results are given
         """
-        return test_loss
+        eval_loss  = self.finalize_loss()
+        eval_scr   = self.finalize_metric()
+        return eval_loss, eval_scr
+
+    def finalize_loss(self):
+        self.test_loss /= len(self.eval_loader)
+        self.logger.info('Validation loss: %.4f' % self.test_loss)
+        return self.test_loss
+
+    def finalize_metric(self, test_loss):
+        return 0.0
+
+    def init_best_model_score(self):
+        self.best_score = 0.0
+    
+    def is_better_model(self, eval_loss, eval_scr):
+        new_score = eval_scr
+        better = new_score > self.best_score
+        if (better):
+            self.logger.info('Current best score: %.2f' % new_score)
+            self.best_score = new_score
+        return better

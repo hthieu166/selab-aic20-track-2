@@ -31,7 +31,7 @@ class ImageBaseDataset(Dataset):
             lbl_type: type of the label to retrieve
             transform: transform object to apply random data augmentation
         """
-        assert mode in ['train', 'val', 'test'], 'Unsupported mode: {}'.format(mode)
+        assert mode.split('/')[-1] in self.get_support_modes(), 'Unsupported mode: {}'.format(mode)
         self.mode = mode
 
         self.datalst_pth = datalst_pth[mode]
@@ -51,6 +51,7 @@ class ImageBaseDataset(Dataset):
         assert osp.isfile(lbl_fname), 'Not found: {}'.format(lbl_fname)
         self.label_dict = self.get_all_labels(lbl_fname)
         
+        # Set up transforms object (#TODO: check again when transforms are neccessary)
         self.transforms = transform
    
     def get_data_sample(self, idx):
@@ -83,6 +84,11 @@ class ImageBaseDataset(Dataset):
             lbl_dict[str(img_id)] = int(df[i,1]) - 1 
         # todo : fix -1 hard code! 
         return lbl_dict
+
+    def get_support_modes(self):
+        """This funnnction return support modes for the current dataset
+        """
+        return ['train', 'val', 'test']
 
     def preprocess_imglst(self):
         """Clean images list entry e.g. "00123.jpg" -> int(123) """

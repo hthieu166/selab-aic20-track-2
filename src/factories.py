@@ -23,9 +23,13 @@ from torchvision import transforms
 
 """ > Import your loss functions here """
 from torch import nn
-
+from src.losses.triplet_loss  import TripletLoss
 """ > Import your data samplers here """
 from src.samplers.instance_id_sampler import InstanceIdSampler
+
+""" > Import your data inference setting here """
+from src.inferences.img_cls_infer import ImgClsInfer
+from src.inferences.img_reid_infer import ImgReIdInfer
 
 import src.utils.logging as logging
 logger = logging.get_logger(__name__)
@@ -36,6 +40,21 @@ class BaseFactory():
         self.info_msg = 'Generating object'
         self.objfn_dict = None
 
+    def get_object(self, name, **kwargs):
+        """Generate registered object based on given name and variables"""
+        gen_obj = self.objfn_dict[name](**kwargs)
+        return gen_obj
+        
+    def print_check_info(self, name, **kwargs):
+        assert name in self.objfn_dict, \
+                '{} not recognized. ' \
+                'Only support:\n{}'.format(name, self.objfn_dict.keys())
+        logger.info('%s: %s' % (self.info_msg, name))
+        logger.info('Given parameters:')
+        for key, val in kwargs.items():
+            logger.info('    %s = %s' % (key, val))
+        logger.info('-'*80)
+        
     def generate(self, name, **kwargs):
         """Generate object based on the given name and variables
         Args:
@@ -45,15 +64,8 @@ class BaseFactory():
         Return:
             Generated object with corresponding type and arguments
         """
-        assert name in self.objfn_dict, \
-            '{} not recognized. ' \
-            'Only support:\n{}'.format(name, self.objfn_dict.keys())
-        
-        logger.info('%s: %s' % (self.info_msg, name))
-        logger.info('Given parameters:')
-        for key, val in kwargs.items():
-            logger.info('    %s = %s' % (key, val))
-        logger.info('-'*80)
+        self.print_check_info(name, **kwargs)
+        return self.get_object(name, **kwargs)
 
 
 class ModelFactory(BaseFactory):
@@ -66,13 +78,6 @@ class ModelFactory(BaseFactory):
             'TripletNet': TripletNet
         }
 
-    def generate(self, model_name, **kwargs):
-        """Generate model based on given name and variables"""
-        super().generate(model_name, **kwargs)
-        gen_model = self.objfn_dict[model_name](**kwargs)
-        return gen_model
-
-
 class DatasetFactory(BaseFactory):
     """Factory for dataset generator"""
     def __init__(self):
@@ -82,11 +87,6 @@ class DatasetFactory(BaseFactory):
             'AIC20_VEHI_REID': AIC20_VEHI_REID
         }
 
-    def generate(self, dataset_name, **kwargs):
-        """Generate dataset based on given name and variables"""
-        super().generate(dataset_name, **kwargs)
-        gen_dataset = self.objfn_dict[dataset_name](**kwargs)
-        return gen_dataset
 
 class DataAugmentationFactory(BaseFactory):
     """Factory for data augmentation object generator"""
@@ -102,10 +102,10 @@ class DataAugmentationFactory(BaseFactory):
     def generate(self, data_augment_name, kwargs):
         """Generate data augmentation strategies based on given name and variables"""
         if kwargs is not None:
-            super().generate(data_augment_name, **kwargs)
+            self.print_check_info(data_augment_name, **kwargs)
             gen_data_augment = self.objfn_dict[data_augment_name](**kwargs)
         else:
-            super().generate(data_augment_name)
+            self.print_check_info(data_augment_name)
             gen_data_augment = self.objfn_dict[data_augment_name]()
         return gen_data_augment
 
@@ -116,7 +116,8 @@ class LossFactory(BaseFactory):
         self.info_msg = 'Generating loss function'
         self.objfn_dict = {
             "CrossEntropy": nn.CrossEntropyLoss,
-            "MSE": nn.MSELoss
+            "MSE": nn.MSELoss,
+            "TripletLoss": TripletLoss
         }
 
     def generate(self, loss_function_name, **kwargs):
@@ -138,3 +139,19 @@ class DataSamplerFactory(BaseFactory):
         super().generate(data_sampler_name, **kwargs)
         gen_data_sampler = self.objfn_dict[data_sampler_name](**kwargs)
         return gen_data_sampler
+
+
+class InferFactory(BaseFactory):
+    """Factory for inference object generator"""
+    def __init__(self):
+        self.info_msg = 'Generating inference object'
+        self.objfn_dict = {
+            "image_classification": ImgClsInfer,
+            "vehicle_reid": ImgReIdInfer
+        }
+
+    def generate(self, data_infer_name, **kwargs):
+        """Generate loss function based on given name and variables"""
+        super().generate(data_infer_name, **kwargs)
+        gen_data_infer = self.objfn_dict[data_infer_name](**kwargs)
+        return gen_data_infer
