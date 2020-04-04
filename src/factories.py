@@ -120,11 +120,6 @@ class LossFactory(BaseFactory):
             "TripletLoss": TripletLoss
         }
 
-    def generate(self, loss_function_name, **kwargs):
-        """Generate loss function based on given name and variables"""
-        super().generate(loss_function_name, **kwargs)
-        gen_loss_fn = self.objfn_dict[loss_function_name](**kwargs)
-        return gen_loss_fn
 
 class DataSamplerFactory(BaseFactory):
     """Factory for loss function generator"""
@@ -134,13 +129,6 @@ class DataSamplerFactory(BaseFactory):
             "InstanceIdSampler": InstanceIdSampler,
         }
 
-    def generate(self, data_sampler_name, **kwargs):
-        """Generate loss function based on given name and variables"""
-        super().generate(data_sampler_name, **kwargs)
-        gen_data_sampler = self.objfn_dict[data_sampler_name](**kwargs)
-        return gen_data_sampler
-
-
 class InferFactory(BaseFactory):
     """Factory for inference object generator"""
     def __init__(self):
@@ -149,9 +137,3 @@ class InferFactory(BaseFactory):
             "image_classification": ImgClsInfer,
             "vehicle_reid": ImgReIdInfer
         }
-
-    def generate(self, data_infer_name, **kwargs):
-        """Generate loss function based on given name and variables"""
-        super().generate(data_infer_name, **kwargs)
-        gen_data_infer = self.objfn_dict[data_infer_name](**kwargs)
-        return gen_data_infer

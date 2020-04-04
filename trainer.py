@@ -139,7 +139,6 @@ def train_one_epoch(model, optimizer, criterion, train_loader, device, writer, r
         if run_iter % 100 == 0:
             writer.add_scalar('train_loss_per_iter', loss.item(), run_iter)
 
-        break
         
     pbar.finish()
 

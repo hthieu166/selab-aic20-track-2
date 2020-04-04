@@ -97,7 +97,6 @@ class BaseDataLoaderFactory():
         return composed_transforms
 
     def build_group_loaders(self, group):
-        group = 'train_val'
         return_dict = {}
         for mem in self.ld_dict[group]:
             mode = group + "/" + mem

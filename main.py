@@ -78,8 +78,8 @@ def parse_args():
         help='Whether training set is augmented')
     
     parser.add_argument(
-        '--pred_path', type=str, default=None,
-        help='Path to save predictions when infer testing data')
+        '--output', type=str, default=None,
+        help='Path to save predictions/outputs from model after infering')
     
     #### Only for finetuning by subject ID ####
     parser.add_argument(
@@ -127,10 +127,10 @@ def main():
 
     # Set up infer funtions
     if 'task' not in train_params:
-        infer_fn = BaseInfer()
+        infer_fn = BaseInfer(output = args.output)
     else:
         inferFact = InferFactory()
-        infer_fn  = inferFact.generate(train_params['task']) 
+        infer_fn  = inferFact.generate(train_params['task'], output = args.output) 
 
     # Set up common parameters for data loaders (shared among train/val/test)
     common_loader_params = {
@@ -157,8 +157,9 @@ def main():
         # Create data loader for testing
         test_loaders = loader_fact.test_loaders()
         # Test routine
+        infer_fn.write_enable()
         model.load_model(args.pretrained_model_path)
-        test(model, criterion, test_loader, device, infer_fn)   
+        test(model, criterion, test_loaders, device, infer_fn)   
     return 0
 
 

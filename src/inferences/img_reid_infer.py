@@ -20,8 +20,8 @@ class ImgReIdInfer(BaseInfer):
     """    
        Note: this class is used for image classification task
     """
-    def __init__(self):
-        pass
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         
     def init_metric(self, **kwargs):
         """
@@ -74,8 +74,25 @@ class ImgReIdInfer(BaseInfer):
         """
         self.gal_lbl = torch.cat(self.gal_lbl, dim = 0).cpu().detach().numpy()
         self.gal_emb = torch.cat(self.gal_emb, dim = 0)
-        mAP, cmc = reid_evaluate(self.que_emb, self.gal_emb, self.que_lbl, self.gal_lbl)
+        self.idcs, mAP, cmc = reid_evaluate(self.que_emb, self.gal_emb, self.que_lbl, self.gal_lbl)
         self.logger.info('$$$ Validation mAP: %.4f' % mAP)
         self.logger.info('$$$ Validation cmc: %.4f' % cmc)
-        
         return mAP
+
+    def export_output(self):
+        super().export_output()
+        #write embs
+        self.gal_emb = self.gal_emb.cpu().detach().numpy()
+        self.que_emb = self.que_emb.cpu().detach().numpy()
+        np.save(osp.join(self.output_dir, "que_emb.npy"), self.que_emb)
+        np.save(osp.join(self.output_dir, "gal_emb.npy"), self.gal_emb)
+        #generate submission file
+        que_fname = self.que_ld.dataset.get_img_names()
+        gal_fname = self.gal_ld.dataset.get_img_names()
+        self.logger.info("Saving embeddings")
+        que_fname = np.array([int(i) for i in que_fname]).astype(np.int32)
+        gal_fname = np.array([int(i) for i in gal_fname]).astype(np.int32)
+        self.logger.info("Saving submission file")
+        out_file  = osp.join(self.output_dir, "track2.txt")
+        np.savetxt(out_file, gal_fname[self.idcs], 
+                delimiter = " ", fmt = "%d", newline='\n')

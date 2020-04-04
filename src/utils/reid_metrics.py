@@ -74,4 +74,4 @@ def reid_evaluate(emb_query, emb_gallery, lb_ids_query, lb_ids_gallery, \
     all_cmcs = np.array(all_cmcs, dtype = np.float32)
     cmc = np.mean(all_cmcs, axis = 0)
 
-    return mAP, cmc
+    return indices,mAP, cmc

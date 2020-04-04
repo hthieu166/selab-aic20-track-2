@@ -22,8 +22,9 @@ class BaseInfer():
        calculate additional metrics: accuracy, plot confusion mat, ...
        export prediction results to txt file
     """
-    def __init__(self):
-        pass
+    def __init__(self, **kwargv):
+        self.output_dir = kwargv['output']
+        self.write_output = False
 
     def init_metric(self, **kwargs):
         self.model      = kwargs['model']
@@ -35,7 +36,7 @@ class BaseInfer():
         # Init some variables
         self.eval_loader = self.loaders['test'] if 'test' in self.loaders else None
         self.eval_mess   = 'Evaluate: '
-        self.test_loss   = 0.0
+        self.test_loss   = 0.0 
 
     def batch_evaluation(self, outputs, labels):
         pass
@@ -62,7 +63,6 @@ class BaseInfer():
                 self.batch_evaluation(samples, labels)
                 # Monitor progress
                 pbar.update(i+1)
-                break
         pbar.finish()
     
     def batch_evaluation(self, samples, labels):
@@ -86,6 +86,7 @@ class BaseInfer():
         """
         eval_loss  = self.finalize_loss()
         eval_scr   = self.finalize_metric()
+        self.export_output()
         return eval_loss, eval_scr
 
     def finalize_loss(self):
@@ -106,3 +107,11 @@ class BaseInfer():
             self.logger.info('Current best score: %.2f' % new_score)
             self.best_score = new_score
         return better
+    
+    def export_output(self):
+        if (self.output_dir == None or self.write_output == False):
+            return 
+        os.makedirs(self.output_dir, mode=0o777, exist_ok=True)
+
+    def write_enable(self):
+        self.write_output = True

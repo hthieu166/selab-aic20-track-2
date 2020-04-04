@@ -73,3 +73,9 @@ class AIC20_VEHI_REID(ImageBaseDataset):
                 self.inst2imgs[lbl] = []
             self.inst2imgs[lbl].append(idx)
         return self.inst2imgs
+    
+    def get_img_names(self):
+        """This function returns a list of image names (str):
+            e.g: '000123', '000234'
+        """
+        return self.imglst
