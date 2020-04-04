@@ -80,6 +80,8 @@ class ImgReIdInfer(BaseInfer):
         return mAP
 
     def export_output(self):
+        if (self.output_dir == None or self.write_output == False):
+            return 
         super().export_output()
         #write embs
         self.gal_emb = self.gal_emb.cpu().detach().numpy()

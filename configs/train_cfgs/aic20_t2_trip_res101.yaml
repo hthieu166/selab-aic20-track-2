@@ -1,6 +1,6 @@
-batch_size: 64
-n_epochs: 10
-decay_epochs: [5]
+batch_size: 256
+n_epochs: 15
+decay_epochs: [3,10]
 momentum: 0.9
 init_lr: 1e-3
 weight_decay: 1e-4  # weight decaying rate
