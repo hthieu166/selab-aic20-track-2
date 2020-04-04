@@ -9,7 +9,9 @@ sys.path.insert(0, os.path.abspath(
     os.path.join(os.path.dirname(__file__), '..', '..', 'src')))
 
 from torch import nn
+#immport base model here:
 import torchvision.models as models 
+from efficientnet_pytorch import EfficientNet
 
 from src.models.base_model import BaseModel
 import ipdb
@@ -45,15 +47,19 @@ class TripletNet(BaseModel):
         if (self.base == 'resnet101'):
             self.model = models.resnet101(pretrained = self.pretrained)
             self.model = nn.Sequential(*list(self.model.children())[:-1])
+        elif ('efficientnet' in self.base):
+            self.model = EfficientNet.from_pretrained(self.base)
         else:
-            assert "Model {} is not supported! ".format(self.base)
-
+            raise ValueError("Model {} is not supported! ".format(self.base))
 
     def forward(self, input_tensor):
         """Forward function of the model
         Args:
             input_tensor: pytorch input tensor
         """
-        
-        y_pred = self.model(input_tensor).squeeze()
+        if ('efficientnet' in self.base):
+            t = self.model.extract_features(input_tensor)
+            y_pred = self.model._avg_pooling(t).squeeze()
+        else:
+            y_pred = self.model(input_tensor).squeeze()
         return y_pred
