@@ -53,7 +53,6 @@ class BaseInfer():
         """
             This function loop through every testing epoches
         """ 
-
         assert self.eval_loader is not None, "Evaluation loader is not specified"
         # Setup progressbar
         pbar = MiscUtils.gen_pbar(max_value=len(self.eval_loader), msg=self.eval_mess)

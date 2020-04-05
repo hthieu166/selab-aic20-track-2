@@ -31,7 +31,7 @@ class ImageBaseDataset(Dataset):
             lbl_type: type of the label to retrieve
             transform: transform object to apply random data augmentation
         """
-        assert mode.split('/')[-1] in self.get_support_modes(), 'Unsupported mode: {}'.format(mode)
+        # assert mode.split('/')[-1] in self.get_support_modes(), 'Unsupported mode: {}'.format(mode)
         self.mode = mode
 
         self.datalst_pth = datalst_pth[mode]

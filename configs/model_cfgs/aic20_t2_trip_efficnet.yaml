@@ -1,5 +1,5 @@
 model_name: 'TripletNet'
 model_params:
-  base: 'efficientnet-b3'
+  base: 'efficientnet-b0'
   pretrained: True
 

@@ -34,29 +34,29 @@ class ImgReIdInfer(BaseInfer):
         self.que_ld = loaders['query']
         self.logger = kwargs['logger']
         
-        self.eval_loader = self.gal_ld
-        self.eval_mess = "Embedding gallery imgs: " 
-        
-        # Setup progressbar
-        pbar = MiscUtils.gen_pbar(max_value=len(self.que_ld), msg='Embedding queries: ')
-    
-        self.que_lbl = []
-        self.que_emb = []
-        self.gal_lbl = []
-        self.gal_emb = []
+        self.hard_eval_set = False
+        if ('h_gallery' in loaders and 'h_query' in loaders):
+            self.hard_eval_set = True
+            self.gal_ld2 = loaders['h_gallery']
+            self.que_ld2 = loaders['h_query']
 
-        with torch.no_grad():
-            for i, (samples, labels) in enumerate(self.que_ld):
-                samples = samples.to(self.device)
-                self.que_emb.append(self.model(samples))
-                self.que_lbl.append(labels)
-                #Monitor progress
-                pbar.update(i+1)
-        pbar.finish()
-        
+        #Easy query set:
+        self.que_emb, self.que_lbl = self.embed_imgs(self.que_ld, 'easy queries')
         self.que_emb = torch.cat(self.que_emb, dim = 0)
         self.que_lbl = torch.cat(self.que_lbl, dim = 0).detach().numpy()
 
+        #Hard query set:
+        if self.hard_eval_set:
+            self.que_emb2, self.que_lbl2 = self.embed_imgs(self.que_ld2, 'hard queries')
+            self.que_emb2 = torch.cat(self.que_emb2, dim = 0)
+            self.que_lbl2 = torch.cat(self.que_lbl2, dim = 0).detach().numpy()
+
+        self.eval_mess = "Embedding easy gallery: " 
+        self.eval_loader = self.gal_ld
+        self.gal_lbl = []
+        self.gal_emb = []
+        
+    
     def batch_evaluation(self, samples, labels):
         """
             This function is called every batch evaluation
@@ -66,6 +66,28 @@ class ImgReIdInfer(BaseInfer):
         self.gal_emb.append(outputs)
         self.gal_lbl.append(labels)
 
+    def evaluation_loop(self):
+        super().evaluation_loop()
+        if (self.hard_eval_set):
+            self.gal_emb2, self.gal_lbl2 = embed_imgs(self.gal_lbl2, "hard gallery")
+    
+    def embed_imgs(self, imgloader, name = ""):
+        """
+            This function embeds all images in given query set to vectors
+        """
+        # Setup progressbar
+        pbar = MiscUtils.gen_pbar(max_value=len(imgloader), msg='Embedding %s: ' % name)
+        que_emb = []
+        que_lbl = []
+        with torch.no_grad():
+            for i, (samples, labels) in enumerate(imgloader):
+                samples = samples.to(self.device)
+                que_emb.append(self.model(samples))
+                que_lbl.append(labels)
+                #Monitor progress
+                pbar.update(i+1)
+        pbar.finish()
+        return que_emb, que_lbl
 
     def finalize_metric(self):
         """
@@ -75,8 +97,16 @@ class ImgReIdInfer(BaseInfer):
         self.gal_lbl = torch.cat(self.gal_lbl, dim = 0).cpu().detach().numpy()
         self.gal_emb = torch.cat(self.gal_emb, dim = 0)
         self.idcs, mAP, cmc = reid_evaluate(self.que_emb, self.gal_emb, self.que_lbl, self.gal_lbl)
-        self.logger.info('$$$ Validation mAP: %.4f' % mAP)
-        self.logger.info('$$$ Validation cmc: %.4f' % cmc)
+        self.logger.info('$$$ Validation mAP (easy): %.4f' % mAP)
+        self.logger.info('$$$ Validation cmc (easy): %.4f' % cmc)
+        self.logger.info('-' * 50)
+        
+        if self.hard_eval_set:
+            self.gal_lbl2 = torch.cat(self.gal_lbl2, dim = 0).cpu().detach().numpy()
+            self.gal_emb2 = torch.cat(self.gal_emb2, dim = 0)
+            idcs, mAP, cmc = reid_evaluate(self.que_emb, self.gal_emb, self.que_lbl, self.gal_lbl)
+            self.logger.info('$$$ Validation mAP (hard): %.4f' % mAP)
+            self.logger.info('$$$ Validation cmc (hard): %.4f' % cmc)           
         return mAP
 
     def export_output(self):

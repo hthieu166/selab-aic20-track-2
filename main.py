@@ -165,8 +165,8 @@ def main():
 
 if __name__ == '__main__':
     # Fix random seeds here for pytorch and numpy
-    torch.manual_seed(1)
-    np.random.seed(2)
+    # torch.manual_seed(1)
+    # np.random.seed(2)
 
     # Parse input arguments
     args = parse_args()
