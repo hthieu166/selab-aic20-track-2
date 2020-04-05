@@ -4,7 +4,6 @@ outputs/
 outputs
 slogs/
 logs
-**/dataset_cfgs
 
 led / optimized / DLL files
 __pycache__/
