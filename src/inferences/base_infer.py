@@ -74,7 +74,8 @@ class BaseInfer():
 
         # Forwarding
         outputs = self.model(samples)
-        loss = self.criterion(outputs, labels)
+        # ipdb.set_trasce()
+        loss = 0.0 #self.criterion(outputs, labels)
         self.test_loss += loss
         return outputs
 

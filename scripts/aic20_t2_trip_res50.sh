@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 source "scripts/master_env.sh"
-exp_id="aic20_t2_trip_effic-b0"
+exp_id="aic20_t2_trip_res50"
 python main.py \
     --gpu_id $GPUID \
     -w $N_WORKERS \

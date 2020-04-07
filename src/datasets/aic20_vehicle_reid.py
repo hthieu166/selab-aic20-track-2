@@ -9,7 +9,7 @@ import xml.etree.ElementTree as ET
 import numpy as np
 sys.path.insert(0, os.path.abspath(
     os.path.join(os.path.dirname(__file__), '..', '..', 'src')))
-
+import pandas as pd
 from src.datasets.img_base_dataset import ImageBaseDataset
 import ipdb
 class AIC20_VEHI_REID(ImageBaseDataset):
@@ -19,22 +19,26 @@ class AIC20_VEHI_REID(ImageBaseDataset):
         """
         return ['train', 'gallery', 'query']
 
-    def get_all_labels(self, lbl_fname):
+    def get_all_labels(self):
         """This function constructs a dictionary of image's label. 
         Each element should looks like: 
         lbl_dict[str(`0000123')] = 1 """
         
-        xml_train_lbl = ET.parse(lbl_fname, parser=ET.XMLParser(encoding='iso-8859-5'))
-        root = xml_train_lbl.getroot()
+        # xml_train_lbl = ET.parse(lbl_fname, parser=ET.XMLParser(encoding='iso-8859-5'))
+        # root = xml_train_lbl.getroot()
         lbl_dict = {}
-        #Convert instance to instance index: e.g. 1->453 (333 insts) => 0 -> 332
         self.ist2idx = {} 
         c = 0
         img2id = {}
-        for child in root.iter("Item"):
-            imgId = child.attrib["imageName"]
-            vehId = int(child.attrib["vehicleID"])
-            img2id[imgId.split('.')[0]] = vehId
+        df = pd.read_csv(self.datalst_pth)  
+        # Convert instance to instance index: e.g. 1->453 (333 insts) => 0 -> 332
+        # for child in root.iter("Item"):
+        #     imgId = child.attrib["imageName"]
+        #     vehId = int(child.attrib["vehicleID"])
+        #     img2id[imgId.split('.')[0]] = vehId
+        for i, imgName in enumerate(df["image_id"]):
+            vehId = int(df["vehicle_id"][i])
+            img2id[imgName.split('.')[0]] = vehId
         for imgId in self.imglst:   
             vehId = img2id[imgId]
             if vehId not in self.ist2idx:
@@ -42,7 +46,14 @@ class AIC20_VEHI_REID(ImageBaseDataset):
                 c+=1
             lbl_dict[imgId] = self.ist2idx[vehId]
         return lbl_dict
+
     
+    def get_img_list(self):
+        df = pd.read_csv(self.datalst_pth) 
+        print(self.datalst_pth)
+        return df["image_id"].to_list()
+
+
     def get_data_label(self, idx):
         # Test mode does not have label
         if (self.mode == 'test'):

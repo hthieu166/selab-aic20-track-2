@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 source "scripts/master_env.sh"
-exp_id="aic20_t2_trip_effic-b0"
+exp_id="aic20_t2_trip_dense"
 python main.py \
     --gpu_id $GPUID \
     -w $N_WORKERS \
@@ -11,6 +11,3 @@ python main.py \
     --log_fname   "logs/${exp_id}/stdout.log" \
     --train_mode  "from_scratch" \
     --is_training true \
-    # --pretrained_model_path "logs/${exp_id}/best.model" \
-    # --output      "outputs/${exp_id}/"
-

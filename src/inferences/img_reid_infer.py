@@ -63,13 +63,13 @@ class ImgReIdInfer(BaseInfer):
         """ 
         outputs = super().batch_evaluation(samples, labels)
         # Collecting all gallery embeddings
-        self.gal_emb.append(outputs)
+        self.gal_emb.append(outputs['feat'])
         self.gal_lbl.append(labels)
 
     def evaluation_loop(self):
         super().evaluation_loop()
         if (self.hard_eval_set):
-            self.gal_emb2, self.gal_lbl2 = embed_imgs(self.gal_lbl2, "hard gallery")
+            self.gal_emb2, self.gal_lbl2 = self.embed_imgs(self.gal_ld2, "hard gallery")
     
     def embed_imgs(self, imgloader, name = ""):
         """
@@ -82,7 +82,7 @@ class ImgReIdInfer(BaseInfer):
         with torch.no_grad():
             for i, (samples, labels) in enumerate(imgloader):
                 samples = samples.to(self.device)
-                que_emb.append(self.model(samples))
+                que_emb.append(self.model(samples)['feat'])
                 que_lbl.append(labels)
                 #Monitor progress
                 pbar.update(i+1)
@@ -100,13 +100,14 @@ class ImgReIdInfer(BaseInfer):
         self.logger.info('$$$ Validation mAP (easy): %.4f' % mAP)
         self.logger.info('$$$ Validation cmc (easy): %.4f' % cmc)
         self.logger.info('-' * 50)
-        
+
         if self.hard_eval_set:
             self.gal_lbl2 = torch.cat(self.gal_lbl2, dim = 0).cpu().detach().numpy()
             self.gal_emb2 = torch.cat(self.gal_emb2, dim = 0)
-            idcs, mAP, cmc = reid_evaluate(self.que_emb, self.gal_emb, self.que_lbl, self.gal_lbl)
-            self.logger.info('$$$ Validation mAP (hard): %.4f' % mAP)
-            self.logger.info('$$$ Validation cmc (hard): %.4f' % cmc)           
+            self.idcs2, mAP2, cmc2 = reid_evaluate(self.que_emb2, self.gal_emb2, self.que_lbl2, self.gal_lbl2)
+            self.logger.info('$$$ Validation mAP (hard): %.4f' % mAP2)
+            self.logger.info('$$$ Validation cmc (hard): %.4f' % cmc2)           
+        
         return mAP
 
     def export_output(self):

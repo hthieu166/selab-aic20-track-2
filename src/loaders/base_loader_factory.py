@@ -57,11 +57,22 @@ class BaseDataLoaderFactory():
         if 'transforms' not in self.train_params:
             return
         else:
+            #base transform for all sets
+            if ("base" in self.train_params['transforms']):
+                self.set_all("transform", 
+                    self.train_params['transforms']['base'])
             for targ in self.train_params['transforms']:
-                trsf = self.train_params['transforms'][targ]
-                if (targ == "all"):
-                    self.set_all("transform", trsf)
-
+                if targ == "base":
+                    continue
+                else:
+                    trsf = self.train_params['transforms'][targ]
+                    tm = targ.split('/')
+                    self.ld_dict[tm[0]][tm[1]]['transform'] = \
+                    {
+                        # **self.ld_dict[tm[0]][tm[1]]['transform'],
+                        **trsf
+                    }
+            
     def gen_data_sampler(self):
         if 'samplers' not in self.train_params:
             return

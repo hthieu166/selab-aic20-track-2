@@ -38,7 +38,8 @@ class ImageBaseDataset(Dataset):
         assert osp.isfile(self.datalst_pth), 'Not found: {}'.format(self.datalst_pth)
 
         #img lst: contains name of all images in dataset
-        self.imglst = open(self.datalst_pth, 'r').read().splitlines()
+        self.imglst = self.get_img_list()
+        
         # Get all imgs's file name
         self.get_all_img_fname()
                 
@@ -46,10 +47,9 @@ class ImageBaseDataset(Dataset):
         
         self.data_root = osp.join(data_root, spldata_dir[self.mode])
         assert osp.isdir(data_root), 'Not found: {}'.format(data_root)
-        
+        self.lbl_fname = lbl_fname
         # Get all imgs's label
-        assert osp.isfile(lbl_fname), 'Not found: {}'.format(lbl_fname)
-        self.label_dict = self.get_all_labels(lbl_fname)
+        self.label_dict = self.get_all_labels()
         
         # Set up transforms object (#TODO: check again when transforms are neccessary)
         self.transforms = transform
@@ -59,6 +59,9 @@ class ImageBaseDataset(Dataset):
         image = Image.open(img_name)
         return image
     
+    def get_img_list(self):
+        return open(self.datalst_pth, 'r').read().splitlines()
+
     def get_data_label(self, idx):
         """This function returns a label for each immage"""
         # Test mode does not have label
@@ -73,11 +76,11 @@ class ImageBaseDataset(Dataset):
         Each element should looks like: `0000123.jpg'"""
         self.img_fname_lst = self.imglst.copy()
 
-    def get_all_labels(self, lbl_fname):
+    def get_all_labels(self):
         """This function constructs a dictionary of image's label. 
         Each element should looks like: 
         lbl_dict[str(`0000123')] = 1 """
-        df = pd.read_csv(lbl_fname).to_numpy()
+        df = pd.read_csv(self.lbl_fname).to_numpy()
         lbl_dict = {}
         
         for i, img_id in enumerate(df[:,0]):

@@ -6,19 +6,19 @@ dataset_params:
             train:      'image_train'
             gallery:    'image_train'
             query:      'image_train'
-            h_gallery:  'image_train'
-            h_query:    'image_train'
+            h_gallery:  'image_test'
+            h_query:    'image_query'
         test:
             gallery:  'image_test'
             query:    'image_query'
     lbl_fname: '../aic20_data/origin/train_label.xml'
     datalst_pth:
         train_val:
-            train:      './dataset_splits/aic20_vehicle_reid/train_train.lst'
-            gallery:    './dataset_splits/aic20_vehicle_reid/gallery_easy.lst'
-            query:      './dataset_splits/aic20_vehicle_reid/query_easy.lst'
-            h_gallery:  './dataset_splits/aic20_vehicle_reid/gallery_hard.lst'
-            h_query:    './dataset_splits/aic20_vehicle_reid/query_hard.lst'
+            train:      './dataset_splits/aic20_vehicle_reid/reid_train.csv'
+            gallery:    './dataset_splits/aic20_vehicle_reid/reid_gallery_easy.csv'
+            query:      './dataset_splits/aic20_vehicle_reid/reid_query_easy.csv'
+            h_gallery:  './dataset_splits/aic20_vehicle_reid/reid_gallery_gt.csv'
+            h_query:    './dataset_splits/aic20_vehicle_reid/reid_query_gt.csv'
         test:
-            gallery:    './dataset_splits/aic20_vehicle_reid/test.lst'
-            query:      './dataset_splits/aic20_vehicle_reid/query.lst'
+            gallery:    './dataset_splits/aic20_vehicle_reid/reid_test.csv'
+            query:      './dataset_splits/aic20_vehicle_reid/reid_query.csv'

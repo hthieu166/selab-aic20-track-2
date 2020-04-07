@@ -53,7 +53,6 @@ def reid_evaluate(emb_query, emb_gallery, lb_ids_query, lb_ids_gallery, \
         # match = matches[qidx][keep]
         match = matches[qidx,:top_k]
         if not np.any(match): continue
-
         cmc = match.cumsum()
         cmc[cmc > 1] = 1
         #basically count all correct prediction < cmc_rannk
