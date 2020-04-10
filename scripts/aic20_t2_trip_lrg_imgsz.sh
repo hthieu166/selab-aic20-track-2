@@ -9,5 +9,6 @@ python main.py \
     --train_cfg   "./configs/train_cfgs/${exp_id}.yaml" \
     --logdir      "logs/${exp_id}" \
     --log_fname   "logs/${exp_id}/stdout.log" \
-    --train_mode  "from_scratch" \
+    --train_mode  "from_pretrained" \
     --is_training true \
+    --pretrained_model_path "logs/aic20_t2_trip_lrg_imgsz/best.model"

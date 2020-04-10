@@ -1,6 +1,6 @@
 batch_size: 512 
-n_epochs: 30
-decay_epochs: [20,25]
+n_epochs: 50
+decay_epochs: [30,40]
 momentum: 0.9
 init_lr: 1e-3
 weight_decay: 1e-4  # weight decaying rate
@@ -20,8 +20,8 @@ transforms: #data augmentation
   train_val/train:
     resize: 
       size: [280,280] #360 #[144,288]
-    vertical_flip:
-      p: 0.5
+    # vertical_flip:
+    #   p: 0.05
     # center_crop: 
     #   size: [330,330] #320
     to_tensor:

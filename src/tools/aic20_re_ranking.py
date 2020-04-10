@@ -23,9 +23,13 @@ Minibatch: avaliable when 'MemorySave' is 'True'
 import numpy as np
 import torch
 from scipy.spatial.distance import cdist
+import sys
+import os
+import argparse
+import ipdb
 
 
-def re_ranking(probFea, galFea, k1, k2, lambda_value, local_distmat=None, only_local=False):
+def re_ranking(probFea, galFea, k1 = 20, k2 = 6, lambda_value = 0.3, local_distmat=None, only_local=False):
     # if feature vector is numpy, you should use 'torch.tensor' transform it to tensor
     query_num = probFea.size(0)
     all_num = query_num + galFea.size(0)

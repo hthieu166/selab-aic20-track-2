@@ -10,7 +10,7 @@ import os
 sys.path.insert(0, os.path.abspath(
     os.path.join(os.path.dirname(__file__), '..', '..', 'src')))
 from src.utils.misc import MiscUtils
-
+from tools.aic20_re_ranking import re_ranking
 import ipdb
 def pdist_torch(emb1, emb2):
     '''
@@ -27,12 +27,15 @@ def pdist_torch(emb1, emb2):
     return dist_mtx
 
 def reid_evaluate(emb_query, emb_gallery, lb_ids_query, lb_ids_gallery, \
-                cmc_rank=1, top_k=100):
+                cmc_rank=1, top_k=100, is_reranking=None):
     #Calculate distance matrix between query images and gallery images
     dist_mtx = pdist_torch(emb_query,emb_gallery).cpu().detach().numpy()
+    if (is_reranking):
+        print ("Reranking is applied!")
+        dist_mtx = re_ranking(emb_query, emb_gallery)
     n_q, n_g = dist_mtx.shape
     #sort "gallery index" in "distance" ascending order 
-    indices = np.argsort(dist_mtx, axis = 1)
+    indices = np.argsort(dist_mtx, axis = 1)[:,:top_k]
     matches = lb_ids_gallery[indices] == lb_ids_query[:, np.newaxis]
     matches = matches.astype(np.int32)
     all_aps = []
@@ -51,7 +54,7 @@ def reid_evaluate(emb_query, emb_gallery, lb_ids_query, lb_ids_gallery, \
         # keep = np.logical_or(pid_diff, cam_diff)
         # keep = np.logical_and(keep, useful)
         # match = matches[qidx][keep]
-        match = matches[qidx,:top_k]
+        match = matches[qidx]
         if not np.any(match): continue
         cmc = match.cumsum()
         cmc[cmc > 1] = 1
@@ -73,4 +76,4 @@ def reid_evaluate(emb_query, emb_gallery, lb_ids_query, lb_ids_gallery, \
     all_cmcs = np.array(all_cmcs, dtype = np.float32)
     cmc = np.mean(all_cmcs, axis = 0)
 
-    return indices,mAP, cmc
+    return indices, mAP, cmc, dist_mtx

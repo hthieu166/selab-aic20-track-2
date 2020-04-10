@@ -18,7 +18,7 @@ import ipdb
 
 class TripletNet(BaseModel):
 
-    def __init__(self, device, base, pretrained = True, n_classes=230, multi_gpus = False):
+    def __init__(self, device, base, pretrained = True, n_classes=230, multi_gpus = False, head = None):
         """Initialize the model
 
         Args:
@@ -29,6 +29,7 @@ class TripletNet(BaseModel):
         super().__init__(device)
         self.n_classes = n_classes
         self.base = base
+        self.head = head
         self.pretrained = pretrained
         self.multi_gpus = multi_gpus
         self.build_model()
@@ -52,6 +53,11 @@ class TripletNet(BaseModel):
             self.ln    = nn.Linear(2048, self.n_classes)
         elif (self.base == 'efficientnet-b0'):
             self.model = EfficientNet.from_pretrained(self.base)
+            if (self.head != None):
+                self.head =   nn.Sequential(
+                    nn.Linear(1280, self.head),
+                    nn.BatchNorm1d(self.head)
+                )
             self.ln    = nn.Linear(1280, self.n_classes)
         elif (self.base == 'efficientnet-b2'):
             self.model = EfficientNet.from_pretrained(self.base)
@@ -77,4 +83,6 @@ class TripletNet(BaseModel):
         """
         y_feat = self.model(input_tensor).squeeze()
         y_cls  = self.ln(y_feat)
+        if (self.head):
+            y_feat = self.head(y_feat)
         return {'feat': y_feat, 'cls': y_cls}

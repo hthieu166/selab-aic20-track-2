@@ -96,7 +96,7 @@ class ImgReIdInfer(BaseInfer):
         """
         self.gal_lbl = torch.cat(self.gal_lbl, dim = 0).cpu().detach().numpy()
         self.gal_emb = torch.cat(self.gal_emb, dim = 0)
-        self.idcs, mAP, cmc = reid_evaluate(self.que_emb, self.gal_emb, self.que_lbl, self.gal_lbl)
+        self.idcs, mAP, cmc, _ = reid_evaluate(self.que_emb, self.gal_emb, self.que_lbl, self.gal_lbl)
         self.logger.info('$$$ Validation mAP (easy): %.4f' % mAP)
         self.logger.info('$$$ Validation cmc (easy): %.4f' % cmc)
         self.logger.info('-' * 50)
@@ -104,7 +104,7 @@ class ImgReIdInfer(BaseInfer):
         if self.hard_eval_set:
             self.gal_lbl2 = torch.cat(self.gal_lbl2, dim = 0).cpu().detach().numpy()
             self.gal_emb2 = torch.cat(self.gal_emb2, dim = 0)
-            self.idcs2, mAP2, cmc2 = reid_evaluate(self.que_emb2, self.gal_emb2, self.que_lbl2, self.gal_lbl2)
+            self.idcs2, mAP2, cmc2, _ = reid_evaluate(self.que_emb2, self.gal_emb2, self.que_lbl2, self.gal_lbl2)
             self.logger.info('$$$ Validation mAP (hard): %.4f' % mAP2)
             self.logger.info('$$$ Validation cmc (hard): %.4f' % cmc2)           
         
@@ -115,6 +115,12 @@ class ImgReIdInfer(BaseInfer):
             return 
         super().export_output()
         #write embs
+        self.logger.info("Reranking results")
+        idcs,mAP, cmc, dist = reid_evaluate(self.que_emb, self.gal_emb, \
+                        self.que_lbl, self.gal_lbl, is_reranking = True)
+        self.logger.info('Reranked - Validation mAP: %.4f' % mAP)
+        self.logger.info('Reranked - Validation cmc (hard): %.4f' % cmc)   
+        
         self.gal_emb = self.gal_emb.cpu().detach().numpy()
         self.que_emb = self.que_emb.cpu().detach().numpy()
         np.save(osp.join(self.output_dir, "que_emb.npy"), self.que_emb)
@@ -122,10 +128,12 @@ class ImgReIdInfer(BaseInfer):
         #generate submission file
         que_fname = self.que_ld.dataset.get_img_names()
         gal_fname = self.gal_ld.dataset.get_img_names()
+        self.logger.info("Saving distance matrix")
+        np.save(osp.join(self.output_dir, "dist.npy"), dist)
         self.logger.info("Saving embeddings")
         que_fname = np.array([int(i) for i in que_fname]).astype(np.int32)
         gal_fname = np.array([int(i) for i in gal_fname]).astype(np.int32)
         self.logger.info("Saving submission file")
         out_file  = osp.join(self.output_dir, "track2.txt")
-        np.savetxt(out_file, gal_fname[self.idcs], 
+        np.savetxt(out_file, gal_fname[idcs], 
                 delimiter = " ", fmt = "%d", newline='\n')

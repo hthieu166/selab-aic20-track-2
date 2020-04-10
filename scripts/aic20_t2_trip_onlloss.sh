@@ -10,5 +10,6 @@ python main.py \
     --logdir      "logs/${exp_id}" \
     --log_fname   "logs/${exp_id}/stdout.log" \
     --train_mode  "from_pretrained" \
-    --is_training true \
-    --pretrained_model_path "logs/${exp_id}/best.model"
+    --is_training false \
+    --pretrained_model_path "logs/${exp_id}/best.model"\
+    --output "outputs/${exp_id}"
