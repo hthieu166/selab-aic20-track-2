@@ -15,6 +15,7 @@ import torch
 import numpy as np
 import torch.nn as nn
 from src.utils.reid_metrics import pdist_torch
+import src.config as cfg
 import ipdb
 class BatchHardTripletSelector(object):
     '''
@@ -56,11 +57,13 @@ class TripletLoss(nn.Module):
         self.batch_selector = BatchHardTripletSelector()
 
     def forward(self, embeds, labels):
+        embeds = embeds['feat']
         anchor, pos, neg = self.batch_selector(embeds, labels)
+
         if self.margin is None:
             num_samples = anchor.shape[0]
             y = torch.ones((num_samples, 1)).view(-1)
-            if anchor.is_cuda: y = y.cuda()
+            if anchor.is_cuda: y = y.to(cfg.device)
             ap_dist = torch.norm(anchor - pos, 2, dim = 1).view(-1)
             an_dist = torch.norm(anchor - neg, 2, dim = 1).view(-1)
             loss = self.Loss(an_dist - ap_dist, y)

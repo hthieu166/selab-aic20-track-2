@@ -6,8 +6,8 @@ from __future__ import absolute_import
 import torch
 
 from src.utils.misc import MiscUtils
-import src.utils.logging as logging
 from src.inferences.base_infer import BaseInfer
+import src.utils.logging as logging
 logger = logging.get_logger(__name__)
 import ipdb
 

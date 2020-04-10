@@ -20,12 +20,16 @@ from src.models.re_identification.triplet_net import TripletNet
 
 """ > Import your data augmentation functions here """
 from torchvision import transforms
-
+from src.data_augmentation.image_random_erasing import RandomErasing
 """ > Import your loss functions here """
 from torch import nn
 from src.losses.triplet_loss  import TripletLoss
+from src.losses.aic20_loss import AIC20Loss
+from src.losses.triplet_loss_online import OnlineTripletLoss
+
 """ > Import your data samplers here """
 from src.samplers.instance_id_sampler import InstanceIdSampler
+from src.samplers.balance_batch_sampler import BalancedBatchSampler
 
 """ > Import your data inference setting here """
 from src.inferences.img_cls_infer import ImgClsInfer
@@ -75,7 +79,7 @@ class ModelFactory(BaseFactory):
         self.objfn_dict = {
             'DummyModel': DummyModel,
             'ImageClassifier': ImageClassifier,
-            'TripletNet': TripletNet
+            'TripletNet': TripletNet,
         }
 
 class DatasetFactory(BaseFactory):
@@ -87,7 +91,6 @@ class DatasetFactory(BaseFactory):
             'AIC20_VEHI_REID': AIC20_VEHI_REID
         }
 
-
 class DataAugmentationFactory(BaseFactory):
     """Factory for data augmentation object generator"""
     def __init__(self):
@@ -95,8 +98,12 @@ class DataAugmentationFactory(BaseFactory):
         self.objfn_dict = {
             "resize": transforms.Resize,
             "center_crop": transforms.CenterCrop,
+            "random_crop": transforms.RandomCrop,
             "to_tensor": transforms.ToTensor,
-            "normalize": transforms.Normalize
+            "normalize": transforms.Normalize,
+            "horizon_flip": transforms.RandomHorizontalFlip,
+            "vertical_flip": transforms.RandomVerticalFlip,
+            "random_erasing": RandomErasing,
         }
 
     def generate(self, data_augment_name, kwargs):
@@ -117,7 +124,9 @@ class LossFactory(BaseFactory):
         self.objfn_dict = {
             "CrossEntropy": nn.CrossEntropyLoss,
             "MSE": nn.MSELoss,
-            "TripletLoss": TripletLoss
+            "TripletLoss": TripletLoss,
+            "AIC20Loss": AIC20Loss,
+            'OnlineTripletLoss': OnlineTripletLoss
         }
 
 
@@ -127,6 +136,7 @@ class DataSamplerFactory(BaseFactory):
         self.info_msg = 'Generating data sampler'
         self.objfn_dict = {
             "InstanceIdSampler": InstanceIdSampler,
+            "BalancedBatchSampler": BalancedBatchSampler
         }
 
 class InferFactory(BaseFactory):

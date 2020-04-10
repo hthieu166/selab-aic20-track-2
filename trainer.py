@@ -117,7 +117,6 @@ def train_one_epoch(model, optimizer, criterion, train_loader, device, writer, r
 
     # Go through all samples of the training data
     train_loss, n_samples, start_time = 0.0, 0, time.time()
-
     for i, (samples, labels) in enumerate(train_loader):
         # Place data on the corresponding device
         samples = samples.to(device)
@@ -138,7 +137,7 @@ def train_one_epoch(model, optimizer, criterion, train_loader, device, writer, r
         run_iter += 1
         if run_iter % 100 == 0:
             writer.add_scalar('train_loss_per_iter', loss.item(), run_iter)
-
+        
         
     pbar.finish()
 

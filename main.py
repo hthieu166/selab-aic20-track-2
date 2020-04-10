@@ -23,7 +23,7 @@ import src.utils.logging as logging
 logger = logging.get_logger(__name__)
 
 import ipdb
-
+import src.config as cfg
 from src.inferences.base_infer import BaseInfer
 def parse_args():
     """Parse input arguments"""
@@ -107,6 +107,7 @@ def main():
         device = torch.device('cpu')
     else:
         device = torch.device('cuda', args.gpu_id)
+    cfg.device = device
     logger.info('Using device: %s' % device)
     
     # Prepare datalst_pths
@@ -123,7 +124,9 @@ def main():
 
     # Set up loss criterion
     loss_fn_factory = LossFactory()
-    criterion = loss_fn_factory.generate(train_params['loss_fn'])
+    loss_n = list(train_params['loss_fn'].keys())[0]
+    loss_params = list(train_params['loss_fn'].values())[0]
+    criterion = loss_fn_factory.generate(loss_n, **loss_params)
 
     # Set up infer funtions
     if 'task' not in train_params:
@@ -165,8 +168,8 @@ def main():
 
 if __name__ == '__main__':
     # Fix random seeds here for pytorch and numpy
-    # torch.manual_seed(1)
-    # np.random.seed(2)
+    torch.manual_seed(1)
+    np.random.seed(2)
 
     # Parse input arguments
     args = parse_args()
